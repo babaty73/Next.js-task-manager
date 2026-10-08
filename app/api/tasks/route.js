@@ -1,7 +1,11 @@
-import {tasks} from "@/lib/tasks"
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
+import connectDB from "@/lib/mongodb";
+import Task from "@/models/Task";
 
 export async function GET(){
+  await connectDB();
+  const tasks = await Task.find();
+
   return NextResponse.json(
   { message: "Tasks retrieved", tasks },
   { status: 200 }
@@ -18,15 +22,13 @@ if (!title) {
   );
 }
 
-  const task = {
-    id:String(Date.now()),
+  const task = await Task.create({
     title,
     completed:false,
-  }
+  });
 
-  tasks.push(task)
 return NextResponse.json(
-  { message: "Task added", task },
+  { message: "Task added", task},
   { status: 201 }
 );
 }
