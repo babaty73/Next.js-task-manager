@@ -1,12 +1,22 @@
 import Task from "@/models/Task"
 import connectDB from "@/lib/mongodb";
 import { NextResponse } from "next/server"
+import mongoose from "mongoose";
 
 export async function GET(request , {params}){
-  await connectDB();
+ try {
+   await connectDB();
   const { id } = await params;
+
+  if (!mongoose.isValidObjectId(id)) {
+  return NextResponse.json(
+    { message: "Invalid task ID" },
+    { status: 400 }
+  );
+}
   const task = await Task.findById(id)
 
+  
   if(!task){
     return NextResponse.json(
       {message:"task not found"},
@@ -19,12 +29,42 @@ export async function GET(request , {params}){
     {status:200}
   )
   
+}catch (err) {
+  console.error("GET /api/tasks error:", err);
+
+  return NextResponse.json(
+    { message: "Internal server error" },
+    { status: 500 }
+  );
+}
+
 }
 
 export async function PUT(request , {params}){
   const { id } = await params;
-  await connectDB();
+
+  try{
+  if (!mongoose.isValidObjectId(id)) {
+  return NextResponse.json(
+    { message: "Invalid task ID" },
+    { status: 400 }
+  );
+}
+
+await connectDB();
   const body = await request.json();
+
+  if (
+  typeof body.title !== "string" ||
+  body.title.trim() === "" ||
+  typeof body.completed !== "boolean"
+) {
+  return NextResponse.json(
+    { message: "Invalid inputs" },
+    { status: 400 }
+  );
+} 
+
    const data = await Task.findById(id)
   
 
@@ -35,16 +75,33 @@ export async function PUT(request , {params}){
     )
   }
 
-  data.title = body.title
+  data.title = body.title.trim()
   data.completed = body.completed
+
   await data.save();
    return NextResponse.json(
       {message:"task is updated successfully", task: data},
     {status:200}
     )
-}
+}catch (err) {
+  console.error("PUT /api/tasks error:", err);
+
+  return NextResponse.json(
+    { message: "Internal server error" },
+    { status: 500 }
+  );
+}}
 export async function DELETE(request, {params}){
+  try{await connectDB();
   const { id } = await params;
+
+  if (!mongoose.isValidObjectId(id)) {
+  return NextResponse.json(
+    { message: "Invalid task ID" },
+    { status: 400 }
+  );
+}
+
   const task = await Task.findByIdAndDelete(id)
 
   if(!task ){
@@ -59,4 +116,11 @@ export async function DELETE(request, {params}){
     {status:200}
   )
 
-}
+}catch (err) {
+  console.error("DELETE /api/tasks error:", err);
+
+  return NextResponse.json(
+    { message: "Internal server error" },
+    { status: 500 }
+  );
+}}
